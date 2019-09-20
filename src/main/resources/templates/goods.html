@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/xml;charset=utf-8">
+    <title>商品列表页</title>
+
+    <link rel="stylesheet" type="text/css" th:href="@{/bootstrap-3.3.7/css/bootstrap.css}">
+    <script type="text/javascript" th:src="@{/jquery-3.1.1.min.js}"></script>
+    <script type="text/javascript" th:src="@{/jquery-validation/jquery.validate.min.js}"></script>
+    <script type="text/javascript" th:src="@{/jquery-validation/localization/messages_zh.min.js}"></script>
+    <script type="text/javascript" th:src="@{/md5.min.js}"></script>
+    <script type="text/javascript" th:src="@{/common.js}"></script>
+    <script type="text/javascript" th:src="@{/layer/layer.js}"></script>
+
+</head>
+<body>
+    <p th:text="'---user:'+${user.nickname}"></p>
+    <h5>---商品列表</h5><br>
+    <table class="table" id="goodsTable">
+        <tr>
+            <th>名称</th><th>图片</th><th>描述</th><th>原价</th><th>秒杀价</th><th>操作</th>
+        </tr>
+        <tr th:each="g,gs: ${goodsList}">
+            <td th:text="${g.name}"></td>
+            <td><img th:src="@{${g.img}}" width="50" height="50"/></td>
+            <td th:text="${g.title}"></td>
+            <td th:text="${g.price}"></td>
+            <td th:text="${g.buyoutPrice}"></td>
+            <td><a th:href="'/goods/detail/'+${g.id}">详情</a></td>
+        </tr>
+    </table>
+
+</body>
+</html>

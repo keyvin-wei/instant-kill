@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/xml;charset=utf-8">
+    <title>商品详情</title>
+
+    <link rel="stylesheet" type="text/css" th:href="@{/bootstrap-3.3.7/css/bootstrap.css}">
+    <script type="text/javascript" th:src="@{/jquery-3.1.1.min.js}"></script>
+    <script type="text/javascript" th:src="@{/jquery-validation/jquery.validate.min.js}"></script>
+    <script type="text/javascript" th:src="@{/jquery-validation/localization/messages_zh.min.js}"></script>
+    <script type="text/javascript" th:src="@{/md5.min.js}"></script>
+    <script type="text/javascript" th:src="@{/common.js}"></script>
+    <script type="text/javascript" th:src="@{/layer/layer.js}"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            countDown();
+        });
+
+        function countDown() {
+            var remainSecond = 0;
+            if($("#remainSecondId")[0]){
+                remainSecond = $("#remainSecondId")[0].innerText;
+            }
+            var timeout;
+            if(remainSecond > 0){
+                timeout = setTimeout(function () {
+                    $("#remainSecondId").text(remainSecond - 1);
+                    $("#remainSecondId").val(remainSecond - 1);
+                    countDown();
+                }, 1000)
+            }
+
+        }
+
+        function resetGoods() {
+            $.ajax({
+                url: "/goods/reset",
+                type: "post",
+                data:{},
+                success:function (data) {
+                    console.log("reset:", data)
+                }
+            });
+        }
+    </script>
+
+</head>
+<body>
+    <p th:text="'---user:'+${user.nickname}"></p>
+    <h5>---商品详情</h5>
+    <button class="button col-md-offset-1" onclick="resetGoods()">还原</button><br><br>
+    <table class="table" id="goodsTable">
+        <tr><td>名称</td>
+            <td th:text="${goodsVo.name}"></td></tr>
+        <tr><td>描述</td>
+            <td th:text="${goodsVo.title}"></td></tr>
+        <tr><td>图片</td>
+            <td><img th:src="@{${goodsVo.img}}" width="100" height="100"/></td></tr>
+        <tr><td>秒杀开始时间</td>
+            <td th:text="${#dates.format(goodsVo.startDate,'yyyy-MM-dd HH:mm:ss')}"></td></tr>
+        <tr><td>秒杀结束时间</td>
+            <td th:text="${#dates.format(goodsVo.endDate,'yyyy-MM-dd HH:mm:ss')}"></td></tr>
+        <tr><td>原价</td>
+            <td th:text="${goodsVo.price}"></td></tr>
+        <tr><td>秒杀价</td>
+            <td th:text="${goodsVo.buyoutPrice}"></td></tr>
+        <tr th:if="${isStart eq 0}"><td>倒计时(秒)</td>
+            <td><span id="remainSecondId" th:text="${remainSecond}"></span></td></tr>
+        <tr><td>状态</td>
+            <td th:if="${isStart eq 1}">活动进行中...</td>
+            <td th:if="${isStart eq 0}">活动未开始...</td>
+            <td th:if="${isStart eq 2}">活动已结束!</tr>
+
+        <tr><td>操作</td>
+            <td><form method="post" action="/goods/buyout">
+                <input type="hidden" name="goodsId" th:value="${goodsVo.id}">
+                <button class="btn btn-primary" type="submit">立即秒杀</button>
+            </form></td>
+        </tr>
+
+    </table>
+
+</body>
+</html>
