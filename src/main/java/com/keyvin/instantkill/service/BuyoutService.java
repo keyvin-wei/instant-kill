@@ -25,12 +25,12 @@ public class BuyoutService {
     //事务
     @Transactional
     public OrderInfo buyout(TbUser tbUser, GoodsVo goodsVo) {
-        //减库存，下订单，写入秒杀订单
-        BuyoutGoods goods = new BuyoutGoods();
-        goods.setId(goodsVo.getId());
-        goods.setStockCount(goodsVo.getStock()-1);//没意义，sql已经减一了
-        goodsService.reduceStock(goods);
-
+        //减库存
+        int ret = goodsService.reduceStock(goodsVo);
+        if(ret<=0){
+            return null;
+        }
+        //下订单，写入秒杀订单
         OrderInfo orderInfo = orderService.createOrder(tbUser, goodsVo);
 
         return orderInfo;

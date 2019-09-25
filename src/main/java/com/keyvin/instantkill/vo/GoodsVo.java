@@ -10,9 +10,18 @@ import java.util.Date;
  * @date 2019/8/14 11:14
  */
 public class GoodsVo extends Goods {
+    private Integer stockCount;
     private BigDecimal buyoutPrice;
     private Date startDate;
     private Date endDate;
+
+    public Integer getStockCount() {
+        return stockCount;
+    }
+
+    public void setStockCount(Integer stockCount) {
+        this.stockCount = stockCount;
+    }
 
     public BigDecimal getBuyoutPrice() {
         return buyoutPrice;

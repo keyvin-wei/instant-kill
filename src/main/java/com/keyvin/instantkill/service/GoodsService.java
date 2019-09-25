@@ -27,9 +27,14 @@ public class GoodsService {
         return goodsDao.getGoodsByGid(goodsId);
     }
 
-    public void reduceStock(BuyoutGoods goods) {
-        goodsDao.reduceStock(goods);
+    public int reduceStock(GoodsVo goods) {
+        BuyoutGoods go = new BuyoutGoods();
+        go.setGoodsId(goods.getId());
+        return goodsDao.reduceStock(go);
     }
 
 
+    public void resetBuyoutGoods() {
+        goodsDao.resetBuyoutGoods();
+    }
 }

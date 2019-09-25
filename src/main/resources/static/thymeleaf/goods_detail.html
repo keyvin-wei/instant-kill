@@ -61,6 +61,8 @@
             <td th:text="${#dates.format(goodsVo.startDate,'yyyy-MM-dd HH:mm:ss')}"></td></tr>
         <tr><td>秒杀结束时间</td>
             <td th:text="${#dates.format(goodsVo.endDate,'yyyy-MM-dd HH:mm:ss')}"></td></tr>
+        <tr><td>库存</td>
+            <td th:text="${goodsVo.stockCount}"></td></tr>
         <tr><td>原价</td>
             <td th:text="${goodsVo.price}"></td></tr>
         <tr><td>秒杀价</td>

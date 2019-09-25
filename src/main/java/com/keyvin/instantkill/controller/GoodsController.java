@@ -3,22 +3,19 @@ package com.keyvin.instantkill.controller;
 import com.keyvin.instantkill.domain.BuyoutOrderInfo;
 import com.keyvin.instantkill.domain.OrderInfo;
 import com.keyvin.instantkill.domain.TbUser;
-import com.keyvin.instantkill.redis.RedisService;
 import com.keyvin.instantkill.service.BuyoutService;
 import com.keyvin.instantkill.service.GoodsService;
 import com.keyvin.instantkill.service.OrderService;
-import com.keyvin.instantkill.service.TbUserService;
 import com.keyvin.instantkill.util.CodeMsg;
+import com.keyvin.instantkill.util.Result;
+import com.keyvin.instantkill.vo.GoodsDetailVo;
 import com.keyvin.instantkill.vo.GoodsVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -39,7 +36,10 @@ public class GoodsController {
     @Autowired
     private GoodsService goodsService;
 
-    //参数验证在 UserArgumentResolver
+    /**
+     * 参数验证在 UserArgumentResolver
+     * tps：可将页面手动渲染之后html放到redis，返回html静态页面，60秒过期更新，访问时取redis，可提高qps几倍
+     */
     @RequestMapping("/list")
     public String list(Model model, TbUser tbUser){
         model.addAttribute("user", tbUser);
@@ -47,14 +47,17 @@ public class GoodsController {
         List<GoodsVo> goodsList = goodsService.listGoodsVo();
         model.addAttribute("goodsList", goodsList);
         System.out.println("goods list");
+
         return "goods";
     }
 
+    @ResponseBody
     @RequestMapping("/detail/{goodsId}")
-    public String detail(Model model, TbUser tbUser, @PathVariable("goodsId")Long goodsId){
-        model.addAttribute("user", tbUser);
+    public Result<GoodsDetailVo> detail(Model model, TbUser tbUser, @PathVariable("goodsId")Long goodsId){
+        GoodsDetailVo detailVo = new GoodsDetailVo();
         GoodsVo goodsVo = goodsService.getGoodsByGid(goodsId);
-        model.addAttribute("goodsVo", goodsVo);
+        detailVo.setTbUser(tbUser);
+        detailVo.setGoodsVo(goodsVo);
 
         long startAt = goodsVo.getStartDate().getTime();
         long endAt = goodsVo.getEndDate().getTime();
@@ -70,37 +73,54 @@ public class GoodsController {
         }else{
             isStart = 1;
         }
-        model.addAttribute("isStart", isStart);
-        model.addAttribute("remainSecond", remainSecond);
-
-        return "goods_detail";
+        detailVo.setIsStart(isStart);
+        detailVo.setRemainSecond(remainSecond);
+        return Result.success(detailVo);
     }
 
     /**
      * 秒杀接口
+     * QPS:186
+     * 3000个
+     * GET/POST区别：GET是幂等的，获取服务端数据，执行多次结果不变，POST向服务端提交数据
      */
-    @RequestMapping("/buyout")
-    public String buyout(Model model, TbUser tbUser, @RequestParam("goodsId")Long goodsId){
+    @ResponseBody
+    @RequestMapping(value = "/buyout", method = RequestMethod.POST)
+    public Result<OrderInfo> buyout(Model model, TbUser tbUser, @RequestParam("goodsId")Long goodsId){
         model.addAttribute("user", tbUser);
         //判断库存
         GoodsVo goodsVo = goodsService.getGoodsByGid(goodsId);
-        int stock = goodsVo.getStock();
+        int stock = goodsVo.getStockCount();
+        log.info("库存："+stock);
         if(stock<=0){
-            model.addAttribute("error_msg", CodeMsg.INVENTORY_SHORTAGE);
-            return "buyout_fail";
+            return Result.error(CodeMsg.INVENTORY_SHORTAGE);
         }
         //判断是否已经秒杀
         BuyoutOrderInfo buyoutOrderInfo = orderService.getOrderByUidGid(tbUser.getUserId(), goodsId);
+        log.info("是否已经秒杀："+buyoutOrderInfo);
         if (buyoutOrderInfo != null){
-            model.addAttribute("error_msg", CodeMsg.BUYOUT_REPEAT);
-            return "buyout_fail";
+            return Result.error(CodeMsg.BUYOUT_REPEAT);
         }
         //减库存，下订单，写入秒杀订单
         OrderInfo orderInfo  = buyoutService.buyout(tbUser, goodsVo);
-        model.addAttribute("orderInfo", orderInfo);
-        model.addAttribute("goodsVo", goodsVo);
+        if(orderInfo==null){
+            return Result.error(CodeMsg.INVENTORY_SHORTAGE);
+        }
+        log.info("秒杀成功：" + tbUser.getUserId());
+        return Result.success(orderInfo);
+    }
 
-        return "buyout_success";
+    @ResponseBody
+    @RequestMapping("/order/{orderId}")
+    public Result<OrderInfo> orderDetail(TbUser tbUser, @PathVariable("orderId")Integer orderId){
+        if (tbUser==null){
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        OrderInfo orderInfo = orderService.getOrderById(orderId);
+        if(orderInfo==null){
+            return Result.error(CodeMsg.ORDER_NOT_FOUND);
+        }
+        return Result.success(orderInfo);
     }
 
 

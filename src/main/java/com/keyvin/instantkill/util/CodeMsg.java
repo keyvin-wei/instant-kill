@@ -11,7 +11,8 @@ public class CodeMsg {
     //通用异常
     public static CodeMsg SUCCESS = new CodeMsg(200, "success");
     public static CodeMsg SERVER_ERROR = new CodeMsg(500100, "服务端异常");
-    public static CodeMsg BIND_ERROR = new CodeMsg(500100, "参数校验异常：%s");
+    public static CodeMsg BIND_ERROR = new CodeMsg(500101, "参数校验异常：%s");
+    public static CodeMsg SESSION_ERROR = new CodeMsg(500102, "登录有效期异常");
 
     //登录异常 500200
     public static CodeMsg PASSWORD_EMPTY = new CodeMsg(500200, "密码不能为空");
@@ -23,6 +24,7 @@ public class CodeMsg {
     //商品模块
     public static CodeMsg INVENTORY_SHORTAGE = new CodeMsg(500301, "商品库存不足");
     public static CodeMsg BUYOUT_REPEAT = new CodeMsg(500302, "不能重复秒杀下单");
+    public static CodeMsg ORDER_NOT_FOUND = new CodeMsg(500303, "订单不存在");
 
     public CodeMsg(int code, String msg) {
         this.code = code;

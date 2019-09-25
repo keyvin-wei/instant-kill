@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.File;
+import java.io.RandomAccessFile;
 import java.util.Date;
 import java.util.List;
 
@@ -70,7 +72,7 @@ public class LoginController {
     @ResponseBody
     @RequestMapping("/test-info")
     public Result<TbUser> list(Model model, TbUser tbUser){
-
+        System.out.println(tbUser.getUserId());
         return Result.success(tbUser);
     }
 
@@ -91,6 +93,66 @@ public class LoginController {
             log.info("添加用户成功：" + "keyvin" + i);
         }
         return "add success";
+    }
+
+    @ResponseBody
+    @RequestMapping("/gener-token")
+    public String generToken(HttpServletResponse response){
+        try {
+            File file = new File("C:\\java\\apache-jmeter-3.3\\计划\\token.txt");
+            if(file.exists())file.delete();
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            file.createNewFile();
+            raf.seek(0);
+            List<TbUser> users = tbUserService.getAllUsers(1, 1000);
+            System.out.println("generToken:" + users.size());
+            for (TbUser user: users){
+                LoginVo vo = new LoginVo();
+                vo.setUserId("" + user.getUserId());
+                vo.setPassword(MD5Util.inputPassToFromPass("123456"));
+                String token = tbUserService.login(response, vo);
+                raf.writeBytes(vo.getUserId());
+                raf.writeBytes(",");
+                raf.writeBytes(token);
+                raf.writeBytes("\n");
+                System.out.println("写入成功："+vo.getUserId());
+            }
+            raf.close();
+        }catch (Exception e){
+            e.printStackTrace();
+            return "gener-token server error";
+        }
+        return "gener-token success";
+    }
+
+    @ResponseBody
+    @RequestMapping("/gener-token8")
+    public String generToken5(HttpServletResponse response){
+        try {
+            File file = new File("C:\\java\\apache-jmeter-3.3\\计划\\token8.txt");
+            if(file.exists())file.delete();
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            file.createNewFile();
+            raf.seek(0);
+            List<TbUser> users = tbUserService.getAllUsers(1, 8);
+            System.out.println("generToken:" + users.size());
+            for (TbUser user: users){
+                LoginVo vo = new LoginVo();
+                vo.setUserId("" + user.getUserId());
+                vo.setPassword(MD5Util.inputPassToFromPass("123456"));
+                String token = tbUserService.login(response, vo);
+                raf.writeBytes(vo.getUserId());
+                raf.writeBytes(",");
+                raf.writeBytes(token);
+                raf.writeBytes("\n");
+                System.out.println("写入成功："+vo.getUserId());
+            }
+            raf.close();
+        }catch (Exception e){
+            e.printStackTrace();
+            return "gener-token server error";
+        }
+        return "gener-token success";
     }
 
 }

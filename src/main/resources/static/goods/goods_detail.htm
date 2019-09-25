@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/xml;charset=utf-8">
+    <title>商品详情</title>
+
+    <link rel="stylesheet" type="text/css" href="/bootstrap-3.3.7/css/bootstrap.css">
+    <script type="text/javascript" src="/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="/jquery-validation/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="/jquery-validation/localization/messages_zh.min.js"></script>
+    <script type="text/javascript" src="/md5.min.js"></script>
+    <script type="text/javascript" src="/common.js"></script>
+    <script type="text/javascript" src="/layer/layer.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            getDetail();
+        });
+
+        function countDown() {
+            var remainSecond = 0;
+            if($("#remainSecondId")[0]){
+                remainSecond = $("#remainSecondId")[0].innerText;
+            }
+            var timeout;
+            if(remainSecond > 0){
+                timeout = setTimeout(function () {
+                    $("#remainSecondId").text(remainSecond - 1);
+                    $("#remainSecondId").val(remainSecond - 1);
+                    countDown();
+                }, 1000)
+            }
+
+        }
+
+        function resetGoods() {
+            $.ajax({
+                url: "/goods/reset",
+                type: "post",
+                data:{},
+                success:function (data) {
+                    console.log("reset:", data)
+                }
+            });
+        }
+
+        function getDetail() {
+            var goodsId = g_getQueryString("goodsId");
+            $.ajax({
+                url: "/goods/detail/"+goodsId,
+                type: "post",
+                data:{},
+                success:function (data) {
+                    console.log("getDetail success:", data)
+                    render(data.data);
+                },
+                error:function (e) {
+                    layer.msg("请求失败error")
+                }
+            });
+        }
+        
+        function render(detail) {
+            var isStart=detail.isStart;
+            var remainSecond=detail.remainSecond;
+            var goodsVo=detail.goodsVo;
+            var tbUser=detail.tbUser;
+            if(tbUser){
+                $("#tbUser").hide();
+            }
+            $("#userNickname").text(tbUser.nickname);
+            $("#goodsName").text(goodsVo.name);
+            $("#goodsTitle").text(goodsVo.title);
+            $("#goodsImg").attr("src", goodsVo.img);
+            $("#startDate").text(new Date(goodsVo.startDate).format("yyyy-MM-dd hh:mm:ss"));
+            $("#endDate").text(new Date(goodsVo.endDate).format("yyyy-MM-dd hh:mm:ss"));
+            $("#remainSecondId").val(remainSecond);
+            $("#remainSecondId").text(remainSecond);
+            $("#goodsId").val(goodsVo.id);
+            $("#price").text(goodsVo.price);
+            $("#buyoutPrice").text(goodsVo.buyoutPrice);
+            $("#stockCount").text(goodsVo.stockCount);
+
+            $("#showRemainSecondId").hide();
+            if(isStart==0){
+                $("#isStart").text("活动未开始...");
+                $("#showRemainSecondId").show();
+            }else if(isStart==1){
+                $("#isStart").text("活动进行中...");
+            } else if(isStart==2){
+                $("#isStart").text("活动已结束.");
+            }
+            countDown();
+        }
+
+        function buyout() {
+            var goodsId = g_getQueryString("goodsId");
+            $.ajax({
+                url: "/goods/buyout",
+                type: "post",
+                data:{
+                    goodsId:goodsId
+                },
+                success:function (data) {
+                    if(data.code==200){
+                        window.location.href="/goods/order_detail.htm?orderId="+data.data.id;
+                    }else{
+                        layer.msg(data.msg)
+                    }
+                },
+                error:function (e) {
+                    layer.msg("请求失败error")
+                }
+            });
+        }
+    </script>
+
+</head>
+<body>
+    <p id="userNickname"></p>
+    <h5>---商品详情</h5>
+    <button class="button col-md-offset-1" onclick="resetGoods()">还原</button><br><br>
+    <table class="table" id="goodsTable">
+        <tr><td>名称</td>
+            <td id="goodsName"></td></tr>
+        <tr><td>描述</td>
+            <td id="goodsTitle"></td></tr>
+        <tr><td>图片</td>
+            <td><img id="goodsImg" width="100" height="100"/></td></tr>
+        <tr><td>秒杀开始时间</td>
+            <td id="startDate"></td></tr>
+        <tr><td>秒杀结束时间</td>
+            <td id="endDate"></td></tr>
+        <tr><td>库存</td>
+            <td id="stockCount"></td></tr>
+        <tr><td>原价</td>
+            <td id="price"></td></tr>
+        <tr><td>秒杀价</td>
+            <td id="buyoutPrice"></td></tr>
+        <tr id="showRemainSecondId"><td>倒计时(秒)</td>
+            <td><span id="remainSecondId"></span></td></tr>
+        <tr><td>状态</td>
+            <td><span id="isStart"></span></td>
+
+        <tr><td>操作</td>
+            <td><button class="btn btn-primary" onclick="buyout()">立即秒杀</button></td>
+        </tr>
+
+    </table>
+
+</body>
+</html>

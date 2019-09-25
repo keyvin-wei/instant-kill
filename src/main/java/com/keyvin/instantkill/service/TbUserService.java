@@ -2,6 +2,7 @@ package com.keyvin.instantkill.service;
 
 import com.keyvin.instantkill.dao.TbUserDao;
 import com.keyvin.instantkill.domain.TbUser;
+import com.keyvin.instantkill.domain.User;
 import com.keyvin.instantkill.exception.GlobalException;
 import com.keyvin.instantkill.redis.RedisService;
 import com.keyvin.instantkill.redis.UserKey;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
+import java.util.List;
+
 import static com.keyvin.instantkill.redis.UserKey.COOKIE_NAME_TOKEN;
 
 /**
@@ -32,11 +35,41 @@ public class TbUserService {
     @Autowired
     private RedisService redisService;
 
+    //注意：当update数据库用户信息时，用这个getByUserId，并更新redis用户对象
     public TbUser getByUserId(Long id){
-        return tbUserDao.getByUserId(id);
+        //取缓存
+        TbUser user = redisService.get(UserKey.getById, ""+id, TbUser.class);
+        if(user!=null){
+            return user;
+        }
+        //取数据库
+        user = tbUserDao.getByUserId(id);
+        if(user!=null){
+            redisService.set(UserKey.getById, ""+id, user);
+        }
+        return user;
     }
 
-    public Boolean login(HttpServletResponse response, LoginVo loginVo) {
+    public boolean updatePassword(String token, long id, String formPass){
+        //取user
+        TbUser user = getByUserId(id);
+        if(user==null){
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+        }
+        //更新数据库
+        TbUser newUser = new TbUser();
+        newUser.setId(new Long(id).intValue());
+        newUser.setPassword(MD5Util.formPassToDbPass(formPass, user.getSalt()));
+        tbUserDao.update(newUser);
+        //处理缓存
+        redisService.delete(UserKey.getById, ""+id);
+        user.setPassword(newUser.getPassword());
+        redisService.set(UserKey.token, token, user);
+
+        return true;
+    }
+
+    public String login(HttpServletResponse response, LoginVo loginVo) {
         if(loginVo==null){
             //抛异常然后全局拦截
             throw new GlobalException(CodeMsg.SERVER_ERROR);
@@ -58,7 +91,7 @@ public class TbUserService {
         String token = UUIDUtil.uuid();
         addCookie(response, token, tbUser);
 
-        return true;
+        return token;
     }
 
     public TbUser getByToken(HttpServletResponse response, String token) {
@@ -85,5 +118,9 @@ public class TbUserService {
 
     public int insert(TbUser user){
         return tbUserDao.insert(user);
+    }
+
+    public List<TbUser> getAllUsers(int index, int size) {
+        return tbUserDao.getAllUsers(index, size);
     }
 }

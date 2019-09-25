@@ -2,10 +2,9 @@ package com.keyvin.instantkill.dao;
 
 import com.keyvin.instantkill.domain.TbUser;
 import com.keyvin.instantkill.domain.User;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
 
 /**
  * @author weiwh
@@ -21,4 +20,9 @@ public interface TbUserDao {
             "values(#{userId},#{nickname},#{password},#{salt},#{head},#{registerDate},#{lastLoginDate})")
     public int insert(TbUser user);
 
+    @Select("select * from tb_user limit #{index},#{size}")
+    public List<TbUser> getAllUsers(@Param("index")int index, @Param("size")int size);
+
+    @Update("update tb_user set password = ${password} where id=${id}")
+    public void update(TbUser newUser);
 }

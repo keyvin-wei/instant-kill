@@ -32,4 +32,7 @@ public interface OrderDao {
 
     @Delete("delete from buyout_order_info where id > 1")
     public void deleteByoutOrderInfo();
+
+    @Select("select * from order_info where id=#{id}")
+    public OrderInfo getOrderById(Integer id);
 }

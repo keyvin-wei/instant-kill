@@ -5,6 +5,8 @@ import com.keyvin.instantkill.dao.OrderDao;
 import com.keyvin.instantkill.domain.BuyoutOrderInfo;
 import com.keyvin.instantkill.domain.OrderInfo;
 import com.keyvin.instantkill.domain.TbUser;
+import com.keyvin.instantkill.redis.OrderKey;
+import com.keyvin.instantkill.redis.RedisService;
 import com.keyvin.instantkill.vo.GoodsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,24 +22,27 @@ import java.util.List;
 @Service
 public class OrderService {
     @Autowired
-    private GoodsDao goodsDao;
+    private GoodsService goodsService;
+    @Autowired
+    private RedisService redisService;
     @Autowired
     private OrderDao orderDao;
 
     public List<GoodsVo> listGoodsVo(){
-        return goodsDao.listGoodsVo();
+        return goodsService.listGoodsVo();
     }
 
     public GoodsVo getGoodsByGid(Long goodsId) {
-        return goodsDao.getGoodsByGid(goodsId);
+        return goodsService.getGoodsByGid(goodsId);
     }
 
     public BuyoutOrderInfo getOrderByUidGid(Long userId, Long goodsId) {
-        return orderDao.getOrderByUidGid(userId, goodsId);
+        return redisService.get(OrderKey.getOrderByUidGid, ""+userId+"_"+goodsId, BuyoutOrderInfo.class);
     }
 
     @Transactional
     public OrderInfo createOrder(TbUser tbUser, GoodsVo goodsVo) {
+        //生成订单
         OrderInfo orderInfo = new OrderInfo();
         orderInfo.setCreateDate(new Date());
         orderInfo.setDeliveryAddrId(22L);
@@ -55,6 +60,8 @@ public class OrderService {
         bo.setOrderId(orderId);
         bo.setUserId(tbUser.getUserId());
         orderDao.insetBuyoutOrderInfo(bo);
+        //订单加到缓存，取时取缓存
+        redisService.set(OrderKey.getOrderByUidGid, ""+tbUser.getId()+"_"+goodsVo.getId(), bo);
 
         return orderInfo;
     }
@@ -65,8 +72,12 @@ public class OrderService {
         orderDao.deleteOrderInfo();
         orderDao.deleteByoutOrderInfo();
         //商品秒杀数还原
-        goodsDao.resetBuyoutGoods();
+        goodsService.resetBuyoutGoods();
 
         return true;
+    }
+
+    public OrderInfo getOrderById(Integer id) {
+        return orderDao.getOrderById(id);
     }
 }
