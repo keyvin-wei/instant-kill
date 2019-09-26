@@ -3,6 +3,10 @@ package com.keyvin.instantkill.controller;
 import com.keyvin.instantkill.domain.BuyoutOrderInfo;
 import com.keyvin.instantkill.domain.OrderInfo;
 import com.keyvin.instantkill.domain.TbUser;
+import com.keyvin.instantkill.mq.BuyoutMessage;
+import com.keyvin.instantkill.mq.MQSender;
+import com.keyvin.instantkill.redis.GoodsKey;
+import com.keyvin.instantkill.redis.RedisService;
 import com.keyvin.instantkill.service.BuyoutService;
 import com.keyvin.instantkill.service.GoodsService;
 import com.keyvin.instantkill.service.OrderService;
@@ -12,6 +16,7 @@ import com.keyvin.instantkill.vo.GoodsDetailVo;
 import com.keyvin.instantkill.vo.GoodsVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,7 +31,7 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/goods")
-public class GoodsController {
+public class GoodsController implements InitializingBean {
     private static Logger log = LoggerFactory.getLogger(GoodsController.class);
 
     @Autowired
@@ -35,6 +40,10 @@ public class GoodsController {
     private OrderService orderService;
     @Autowired
     private GoodsService goodsService;
+    @Autowired
+    private RedisService redisService;
+    @Autowired
+    private MQSender mqSender;
 
     /**
      * 参数验证在 UserArgumentResolver
@@ -86,8 +95,9 @@ public class GoodsController {
      */
     @ResponseBody
     @RequestMapping(value = "/buyout", method = RequestMethod.POST)
-    public Result<OrderInfo> buyout(Model model, TbUser tbUser, @RequestParam("goodsId")Long goodsId){
+    public Result<Integer> buyout(Model model, TbUser tbUser, @RequestParam("goodsId")Long goodsId){
         model.addAttribute("user", tbUser);
+        /*
         //判断库存
         GoodsVo goodsVo = goodsService.getGoodsByGid(goodsId);
         int stock = goodsVo.getStockCount();
@@ -108,6 +118,26 @@ public class GoodsController {
         }
         log.info("秒杀成功：" + tbUser.getUserId());
         return Result.success(orderInfo);
+        */
+
+        //redis预减库存
+        long stock = redisService.decr(GoodsKey.getBuyoutGoodsStock, ""+goodsId);
+        if(stock<0){
+            return Result.error(CodeMsg.INVENTORY_SHORTAGE);
+        }
+        //判断是否已经秒杀
+        BuyoutOrderInfo buyoutOrderInfo = orderService.getOrderByUidGid(tbUser.getUserId(), goodsId);
+        if (buyoutOrderInfo != null){
+            return Result.error(CodeMsg.BUYOUT_REPEAT);
+        }
+        //入队MQ
+        BuyoutMessage bm = new BuyoutMessage();
+        bm.setGoodsId(goodsId);
+        bm.setTbUser(tbUser);
+        mqSender.sendBuyoutMessage(bm);
+
+        //返回0代表排队中
+        return Result.success(0);
     }
 
     @ResponseBody
@@ -131,4 +161,29 @@ public class GoodsController {
         return "success";
     }
 
+    @ResponseBody
+    @RequestMapping("/mq")
+    public String testMQ(){
+        mqSender.send("Controller发送了一条测试数据！Direct");
+        mqSender.sendTopic("Controller发送了一条测试数据！topic");
+        mqSender.sendFanout("Controller发送了一条测试数据！广播");
+        mqSender.sendHeaders("Controller发送了一条测试数据！headers");
+        return "success";
+    }
+
+    /**
+     * 系统初始化 afterPropertiesSet
+     * 系统启动时将商品库存加载到redis缓存中
+     */
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        List<GoodsVo> goodsList = goodsService.listGoodsVo();
+        if (goodsList==null){
+            return;
+        }
+        for (GoodsVo vo: goodsList){
+            redisService.set(GoodsKey.getBuyoutGoodsStock, ""+vo.getId(), vo.getStockCount());
+        }
+
+    }
 }
