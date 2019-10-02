@@ -1,7 +1,9 @@
 # instant-kill
 #### **秒杀系统**
 
-springboot + redis + mysql + rabbitMq
+springboot + redis + mysql + rabbitMq   
+
+测试地址：[www.keyvin.cn](http://www.keyvin.cn:8100/login)
 
 #### **秒杀接口优化：目的减少数据库访问**
 （1）系统初始化时把库存数加载到redis中；  
