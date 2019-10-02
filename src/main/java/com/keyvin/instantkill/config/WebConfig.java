@@ -3,6 +3,7 @@ package com.keyvin.instantkill.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import java.util.List;
@@ -16,10 +17,19 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 
     @Autowired
     private UserArgumentResolver userArgumentResolver;
+    @Autowired
+    private AccessLimitInterceptor accessLimitInterceptor;
 
-    //controller方法的参数的赋值，进controller之前做的
+    /**
+     * controller方法的参数的赋值，进controller之前做的
+     */
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
         argumentResolvers.add(userArgumentResolver);
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(accessLimitInterceptor);
     }
 }

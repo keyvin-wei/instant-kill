@@ -92,4 +92,9 @@ public class MQConfig {
         return BindingBuilder.bind(headersQueue()).to(headersExchange()).whereAll(map).match();
     }
 
+    @Bean
+    public Queue buyoutQueue(){
+        return new Queue(BUYOUT_QUEUE, true);
+    }
+
 }

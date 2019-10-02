@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/xml;charset=utf-8">
-    <title>login</title>
+    <title>秒杀系统</title>
+    <meta name="description" content="秒杀系统 instant-kill springboot + redis + mysql + rabbitMq">
+    <meta name="description" content="主要功能：内存标记减少redis访问、redis预减库存减少数据库访问、rabbitmq异步处理秒杀接口、秒杀接口地址隐藏（动态获取）、验证码（高峰分流）、
+            接口防刷限制用户访问频率、两次MD5加密用户密码、分布式session、页面静态化前后端分离等">
 
     <link rel="stylesheet" type="text/css" th:href="@{/bootstrap-3.3.7/css/bootstrap.css}">
     <script type="text/javascript" th:src="@{/jquery-3.1.1.min.js}"></script>
@@ -12,7 +15,16 @@
     <script type="text/javascript" th:src="@{/md5.min.js}"></script>
     <script type="text/javascript" th:src="@{/common.js}"></script>
     <script type="text/javascript" th:src="@{/layer/layer.js}"></script>
-
+    <style type="text/css">
+        .login-bg {
+            height: 100%;
+            width: 100%;
+            background-color: #f5f4f4;
+        }
+        .ml30{
+            margin-left: 30px;
+        }
+    </style>
     <script type="text/javascript">
         function login() {
             $("#loginForm").validate({
@@ -53,20 +65,20 @@
         }
     </script>
 </head>
-<body>
-    <h2 style="width: 50%; margin: 0 auto">登录</h2><br>
-    <form id="loginForm" name="loginForm" method="post" style="width: 50%; margin: 0 auto">
+<body class="login-bg">
+    <h2 style="width: 50%; margin: 0 auto;margin-top: 100px;">登录</h2><br>
+    <form id="loginForm" name="loginForm" method="post" style="width: 50%; margin: 0 auto;">
         <div class="form-group">
             <label>账号：</label>
-            <input id="userId" name="userId"required="true">
+            <input id="userId" name="userId"required="true" value="15512341234">
         </div>
         <div class="form-group">
             <label>密码：</label>
-            <input id="password" name="password" type="password" required="true" minlength="6">
+            <input id="password" name="password" type="password" required="true" minlength="6" value="123456">
         </div>
         <div class="row">
-            <button class="btn">重置</button>
-            <button class="btn btn-primary" type="submit" onclick="login()">登录</button>
+            <button class="btn ml30" style="background-color: darkgrey;">重置</button>
+            <button class="btn btn-primary ml30" type="submit" onclick="login()">登录</button>
         </div>
 
     </form>

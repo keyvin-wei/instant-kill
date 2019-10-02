@@ -15,7 +15,7 @@ import java.util.List;
 @Mapper
 public interface GoodsDao {
 
-    @Select("select a.*,b.buyout_price,b.start_date,b.end_date " +
+    @Select("select a.*,b.stock_count,b.buyout_price,b.start_date,b.end_date " +
             "from goods a left join buyout_goods b on a.id=b.goods_id")
     public List<GoodsVo> listGoodsVo();
 

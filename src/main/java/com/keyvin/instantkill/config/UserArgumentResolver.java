@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
+ * AccessLimitInterceptor（HandlerInterceptorAdapter）拦截器先执行之后才到这儿
  * @author weiwh
  * @date 2019/8/14 0:39
  */
@@ -37,27 +38,8 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     @Override
     public Object resolveArgument(MethodParameter methodParameter, ModelAndViewContainer modelAndViewContainer, NativeWebRequest webRequest, WebDataBinderFactory webDataBinderFactory) throws Exception {
         //进方法之前参数校验
-        HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
-        HttpServletResponse response = webRequest.getNativeResponse(HttpServletResponse.class);
-        String cookieToken = request.getParameter(UserKey.COOKIE_NAME_TOKEN);
-        String paramToken = getCookieValue(request, UserKey.COOKIE_NAME_TOKEN);
-        if(StringUtils.isEmpty(cookieToken)&&StringUtils.isEmpty(paramToken)){
-            return null;
-        }
-        String token = StringUtils.isEmpty(paramToken) ? cookieToken:paramToken;
-        TbUser tbUser = tbUserService.getByToken(response, token);
-        return tbUser;
+        return UserContext.getUser();
     }
 
-    private String getCookieValue(HttpServletRequest request, String cookieName) {
-        Cookie[] cookies = request.getCookies();
-        if(cookies !=null && cookies.length>0){
-            for(Cookie cookie: cookies){
-                if(cookie.getName().equals(cookieName)){
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
-    }
+
 }

@@ -26,6 +26,7 @@ public class RedisService {
         try {
             jedis = jedisPool.getResource();
             String realKey = prefix.getPrefix() + key;  //生成真正的key
+            // System.out.println("redis get:"+realKey);
             String str = jedis.get(realKey);
             T t = stringToBean(str, clazz);
             return t;
@@ -47,6 +48,7 @@ public class RedisService {
             }
             String realKey = prefix.getPrefix() + key;  //生成真正的key
             int sec = prefix.expireSeconds();
+            // System.out.println("redis set:"+realKey+"\t"+str);
             if (sec<=0){
                 jedis.set(realKey, str);
             }else {

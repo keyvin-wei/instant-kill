@@ -53,16 +53,16 @@ public class OrderService {
         orderInfo.setOrderChannel(1);
         orderInfo.setStatus(0);
         orderInfo.setUserId(tbUser.getUserId());
-        Long orderId = orderDao.insertOrderInfo(orderInfo);
+        orderDao.insertOrderInfo(orderInfo);
 
         BuyoutOrderInfo bo = new BuyoutOrderInfo();
         bo.setGoodsId(goodsVo.getId());
-        bo.setOrderId(orderId);
+        bo.setOrderId(orderInfo.getId());
         bo.setUserId(tbUser.getUserId());
         orderDao.insetBuyoutOrderInfo(bo);
+
         //订单加到缓存，取时取缓存
         redisService.set(OrderKey.getOrderByUidGid, ""+tbUser.getId()+"_"+goodsVo.getId(), bo);
-
         return orderInfo;
     }
 

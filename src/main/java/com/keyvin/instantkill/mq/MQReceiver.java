@@ -1,5 +1,6 @@
 package com.keyvin.instantkill.mq;
 
+import com.keyvin.instantkill.domain.BuyoutOrderInfo;
 import com.keyvin.instantkill.domain.OrderInfo;
 import com.keyvin.instantkill.redis.RedisService;
 import com.keyvin.instantkill.service.BuyoutService;
@@ -25,22 +26,33 @@ public class MQReceiver {
     private BuyoutService buyoutService;
     @Autowired
     private GoodsService goodsService;
+    @Autowired
+    private OrderService orderService;
 
     @RabbitListener(queues = MQConfig.BUYOUT_QUEUE)
     public void receiveBuyoutMessage(String msg){
-        BuyoutMessage bm = RedisService.stringToBean(msg, BuyoutMessage.class);
-        log.info("MQ接收数据receiveBuyoutMessage：" + msg);
+        try {
+            BuyoutMessage bm = RedisService.stringToBean(msg, BuyoutMessage.class);
+            log.info("MQ接收数据receiveBuyoutMessage：" + msg);
 
-        //判断库存
-        GoodsVo goodsVo = goodsService.getGoodsByGid(bm.getGoodsId());
-        int stock = goodsVo.getStockCount();
-        if(stock <= 0){
-            return;
-        }
-        //减库存，下订单，写入秒杀订单
-        OrderInfo orderInfo  = buyoutService.buyout(bm.getTbUser(), goodsVo);
-        if(orderInfo == null){
-            return;
+            //判断库存
+            GoodsVo goodsVo = goodsService.getGoodsByGid(bm.getGoodsId());
+            int stock = goodsVo.getStockCount();
+            if(stock <= 0){
+                return;
+            }
+            //判断是否已经秒杀
+            BuyoutOrderInfo buyoutOrderInfo = orderService.getOrderByUidGid(bm.getTbUser().getUserId(), bm.getGoodsId());
+            if (buyoutOrderInfo != null){
+                return;
+            }
+            //减库存，下订单，写入秒杀订单
+            OrderInfo orderInfo  = buyoutService.buyout(bm.getTbUser(), goodsVo);
+            if(orderInfo == null){
+                return;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
 
     }

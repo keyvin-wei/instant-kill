@@ -1,5 +1,6 @@
 package com.keyvin.instantkill.vo;
 
+import com.keyvin.instantkill.domain.BuyoutOrderInfo;
 import com.keyvin.instantkill.domain.TbUser;
 
 /**
@@ -12,6 +13,7 @@ public class GoodsDetailVo {
     private int remainSecond=0;
     private GoodsVo goodsVo;
     private TbUser tbUser;
+    private BuyoutOrderInfo buyoutOrder;
 
     public GoodsVo getGoodsVo() {
         return goodsVo;
@@ -43,5 +45,13 @@ public class GoodsDetailVo {
 
     public void setTbUser(TbUser tbUser) {
         this.tbUser = tbUser;
+    }
+
+    public BuyoutOrderInfo getBuyoutOrder() {
+        return buyoutOrder;
+    }
+
+    public void setBuyoutOrder(BuyoutOrderInfo buyoutOrder) {
+        this.buyoutOrder = buyoutOrder;
     }
 }

@@ -19,18 +19,34 @@
 
         function countDown() {
             var remainSecond = 0;
+            $("#showRemainSecondId").hide();
             if($("#remainSecondId")[0]){
                 remainSecond = $("#remainSecondId")[0].innerText;
             }
             var timeout;
             if(remainSecond > 0){
+                $("#showRemainSecondId").show();
                 timeout = setTimeout(function () {
                     $("#remainSecondId").text(remainSecond - 1);
                     $("#remainSecondId").val(remainSecond - 1);
+                    $("#buyoutId").attr("disabled", "disabled");
                     countDown();
                 }, 1000)
+            }else if(remainSecond == 0){
+                if(timeout){
+                    clearTimeout(timeout)
+                }
+                doingBuyout();
             }
+        }
 
+        function doingBuyout() {
+            $("#showRemainSecondId").hide();
+            $("#isStart").text("活动进行中...");
+            $("#buyoutId").removeAttr("disabled");
+            $("#verifyCodeImg").show();
+            $("#verifyCode").show();
+            reflashCodeImg();
         }
 
         function resetGoods() {
@@ -65,6 +81,7 @@
             var remainSecond=detail.remainSecond;
             var goodsVo=detail.goodsVo;
             var tbUser=detail.tbUser;
+            var buyoutOrder=detail.buyoutOrder;
             if(tbUser){
                 $("#tbUser").hide();
             }
@@ -80,30 +97,35 @@
             $("#price").text(goodsVo.price);
             $("#buyoutPrice").text(goodsVo.buyoutPrice);
             $("#stockCount").text(goodsVo.stockCount);
+            if(buyoutOrder){
+                $("#gotoOrder").text(buyoutOrder.orderId);
+                $("#gotoOrder").click(function () {
+                    window.location.href="/goods/order_detail.htm?orderId="+buyoutOrder.orderId;
+                });
+            }
 
-            $("#showRemainSecondId").hide();
             if(isStart==0){
                 $("#isStart").text("活动未开始...");
-                $("#showRemainSecondId").show();
             }else if(isStart==1){
-                $("#isStart").text("活动进行中...");
+                doingBuyout();
             } else if(isStart==2){
                 $("#isStart").text("活动已结束.");
             }
             countDown();
         }
 
-        function buyout() {
-            var goodsId = g_getQueryString("goodsId");
+        function buyout(path, goodsId) {
+            console.log("send buyout")
             $.ajax({
-                url: "/goods/buyout",
+                url: "/goods/buyout/"+path,
                 type: "post",
                 data:{
                     goodsId:goodsId
                 },
                 success:function (data) {
+                    console.log("buyout return:",data);
                     if(data.code==200){
-                        window.location.href="/goods/order_detail.htm?orderId="+data.data.id;
+                        getBuyoutResult(goodsId);
                     }else{
                         layer.msg(data.msg)
                     }
@@ -113,12 +135,83 @@
                 }
             });
         }
+
+        function getBuyoutResult(goodsId) {
+            console.log("send getBuyoutResult");
+            $.ajax({
+                url: "/goods/buyout-result",
+                type: "get",
+                data:{
+                    goodsId:goodsId
+                },
+                success:function (data) {
+                    console.log("buyout return:",data);
+                    if(data.code==200){
+                        var result = data.data;
+                        if(result < 0){
+                            layer.msg("对不起，秒杀失败！")
+                        }else if(result == 0){
+                            //排队中继续查询
+                            setTimeout(function () {
+                                getBuyoutResult(goodsId)
+                            }, 200)
+                        }else{
+                            layer.confirm("恭喜你，秒杀成功！查看订单？",{btn:["确定","取消"]},
+                            function () {
+                                window.location.href="/goods/order_detail.htm?orderId="+result;
+                            },function () {
+                                layer.closeAll();
+                                getDetail();
+                            });
+                        }
+                    }else{
+                        layer.msg(data.msg)
+                    }
+                },
+                error:function (e) {
+                    layer.msg("请求失败error")
+                }
+            });
+        }
+
+        function getBuyoutPath() {
+            console.log("send getBuyoutPath");
+            var goodsId = g_getQueryString("goodsId");
+            $.ajax({
+                url: "/goods/buyout-path",
+                type: "get",
+                data:{
+                    goodsId: goodsId,
+                    verifyCode:$("#verifyCode").val()
+                },
+                success:function (data) {
+                    console.log("path return:"+data);
+                    reflashCodeImg();
+                    if(data.code==200){
+                        var path = data.data;
+                        buyout(path, goodsId)
+                    }else{
+                        layer.msg(data.msg)
+                    }
+
+                },
+                error:function (e) {
+                    layer.msg("请求失败error")
+                }
+            });
+        }
+
+        function reflashCodeImg() {
+            var goodsId = g_getQueryString("goodsId");
+            $("#verifyCodeImg").attr("src", "/goods/varify-code?goodsId=" + goodsId+"&time="+new Date().getTime());
+        }
     </script>
 
 </head>
 <body>
     <p id="userNickname"></p>
     <h5>---商品详情</h5>
+    <h5>已买ID？<a id="gotoOrder" style="cursor: pointer"></a></h5>
     <button class="button col-md-offset-1" onclick="resetGoods()">还原</button><br><br>
     <table class="table" id="goodsTable">
         <tr><td>名称</td>
@@ -141,9 +234,16 @@
             <td><span id="remainSecondId"></span></td></tr>
         <tr><td>状态</td>
             <td><span id="isStart"></span></td>
-
         <tr><td>操作</td>
-            <td><button class="btn btn-primary" onclick="buyout()">立即秒杀</button></td>
+            <td>
+                <div class="row">
+                    <div class="form-inline">
+                        <img id="verifyCodeImg" width="80" height="32" style="display: none" onclick="reflashCodeImg()"/>
+                        <input id="verifyCode" class="form-control" style="width: 60px;display: none"/>
+                        <button class="btn btn-primary" onclick="getBuyoutPath()" disabled id="buyoutId">立即秒杀</button>
+                    </div>
+                </div>
+            </td>
         </tr>
 
     </table>

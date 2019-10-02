@@ -43,6 +43,7 @@
             $("#goodsTitle").text(order.goodsName);
             $("#goodsImg").attr("src", order.img);
             $("#createDate").text(order.createDate);
+            $("#price").text(order.price);
             $("#buyoutPrice").text(order.goodsPrice);
             $("#createDate").text(order.createDate);
             var status = order.status;
@@ -66,6 +67,11 @@
                 $("#orderInfoStatus").text("已完成，去评价");
 
             }
+        }
+
+        function toPay() {
+            //支付功能...
+            layer.msg("待开发")
         }
 
     </script>
@@ -94,7 +100,7 @@
             <td id="buyoutPrice"></td></tr>
         <tr><td>订单状态</td>
             <td>
-                <span id="orderInfoStatus"></span><button id="payBtn">去支付</button>
+                <span id="orderInfoStatus"></span><button id="payBtn" onclick="toPay()">去支付</button>
             </td>
         </tr>
 
